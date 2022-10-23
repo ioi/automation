@@ -1,0 +1,7 @@
+cd /opt/translation
+
+. "scripts/env.sh"
+
+cd app
+
+exec gunicorn Translation.wsgi --bind=127.0.0.1:8000 --workers=$GUNICORN_WORKERS -p /opt/translation/run.pid

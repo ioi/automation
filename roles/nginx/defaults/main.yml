@@ -1,0 +1,20 @@
+# Whether to set up SSL using Let's Encrypt.
+use_letsencrypt: yes
+
+# Service administrator email to be used for Let's Encrypt certificate requests.
+letsencrypt_service_admin_email: omit
+
+# Directory used by Certbot to serve challenge files.
+letsencrypt_webroot_directory: /var/lib/letsencrypt
+
+# Whether to install a cron job that auto-renews Let's Encrypt certificates.
+letsencrypt_auto_renew: yes
+
+# List of parameters for configuring domains to be served by Nginx.
+# Extra variables for each domain will be passed to the templates.
+# - name: <string> # Used for the file name of the Nginx config.
+#   fqdn: <string> # The fully qualified domain name to serve.
+#   config_template: <string> # Template file to be used for the Nginx config.
+#   auth_basic_user: <string>
+#   auth_basic_pass: <string>
+domains: []

@@ -1,0 +1,11 @@
+[Unit]
+Description=IOI Translation App
+After=network.target
+
+[Service]
+PIDFile=/opt/translation/run.pid
+ExecStart=/bin/sh /opt/translation/scripts/start_gunicorn.sh
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target

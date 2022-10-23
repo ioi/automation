@@ -1,0 +1,24 @@
+# PostgreSQL Client Authentication Configuration File
+# ===================================================
+# - To allow non-local connections, you must also modify the
+#   listen_addresses config in postgresql.conf.
+# - Requires restart or SIGHUP to apply.
+
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+
+# Database administrative login by Unix domain socket. DO NOT DISABLE!
+local   all             postgres                                peer
+
+# Unix domain socket local connections:
+local   all             all                                     peer
+
+# IPv4 local connections:
+host    all             all             127.0.0.1/32            md5
+
+# IPv6 local connections:
+host    all             all             ::1/128                 md5
+
+# User-defined IPv4/IPv6 connections:
+{% for db_user in db_users %}
+{% for host_address in db_user.allowed_host_addresses | default([]) %}host {{ db_user.allowed_databases | default('[all]') | join(',') }} {{ db_user.name }} {{ host_address }} md5
+{% endfor %}{% endfor %}

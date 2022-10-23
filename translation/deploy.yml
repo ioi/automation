@@ -1,0 +1,32 @@
+- hosts: translation
+  gather_facts: no
+  roles:
+    - role: redis
+
+    - role: postgresql
+      vars:
+        dbs:
+          - name: "{{ translation_db }}"
+        db_users:
+          - name: "{{ translation_db_user }}"
+            password: "{{ translation_db_pass }}"
+            allowed_databases:
+              - "{{ translation_db }}"
+            enable_large_object: no
+        db_privileges:
+          - database: "{{ translation_db }}"
+            roles: "{{ translation_db_user }}"
+            privs: ALL
+
+    - role: translation
+
+    - role: nginx
+      vars:
+        domains:
+          - name: translation
+            fqdn: "{{ translation_fqdn }}"
+            config_template: "{{ playbook_dir }}/../templates/translation.nginx.j2"
+            upstream_addresses:
+              - 127.0.0.1:8000
+            auth_basic_user: "{{ translation_auth_basic_user | default('') }}"
+            auth_basic_pass: "{{ translation_auth_basic_pass | default('') }}"

@@ -1,0 +1,21 @@
+# vars:
+#   db_user:
+#     - name: <string>
+
+- name: Check whether SELECT privilege for pg_largeobject is already granted to the DB user
+  become: yes
+  become_user: postgres
+  postgresql_query:
+    db: postgres
+    query: "SELECT 1 FROM information_schema.role_table_grants WHERE grantee = '{{ db_user.name }}' AND table_schema = 'pg_catalog' AND table_name = 'pg_largeobject' AND privilege_type = 'SELECT'"
+  check_mode: no
+  register: check_pg_largeobject_select_privilege_query_result
+
+- name: Grant SELECT privilege for pg_largeobject to the DB user
+  become: yes
+  become_user: postgres
+  postgresql_query:
+    db: postgres
+    query: "GRANT SELECT ON pg_largeobject TO {{ db_user.name }}"
+  when: check_pg_largeobject_select_privilege_query_result.rowcount == 0
+  notify: Restart PostgreSQL

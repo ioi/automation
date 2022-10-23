@@ -1,0 +1,127 @@
+- name: Install PostgreSQL
+  become: yes
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - libpq-dev # psycopg2 prerequisite
+    - python3-dev # psycopg2 prerequisite
+    - python3-psycopg2 # postgresql_* Ansible modules prerequisite
+    - "postgresql-{{ postgresql_version }}"
+    - postgresql-contrib
+  tags: packages
+
+- name: Create databases
+  become: yes
+  become_user: postgres
+  postgresql_db:
+    name: "{{ item.name }}"
+    encoding: "UTF-8"
+    lc_collate: "{{ db_locale | default ('en_US.UTF-8') }}"
+    lc_ctype: "{{ db_locale | default ('en_US.UTF-8') }}"
+    template: template0
+  loop: "{{ dbs }}"
+  notify: Restart PostgreSQL
+
+- name: Create DB users
+  become: yes
+  become_user: postgres
+  postgresql_user:
+    name: "{{ item.name }}"
+    password: "{{ item.password }}"
+    encrypted: yes
+  loop: "{{ db_users }}"
+  notify: Restart PostgreSQL
+
+- name: Set DB public schema owners
+  become: yes
+  become_user: postgres
+  postgresql_owner:
+    db: "{{ item.name }}"
+    obj_name: public
+    obj_type: schema
+    new_owner: "{{ item.public_schema_owner }}"
+  loop: "{{ dbs }}"
+  when: item.public_schema_owner is defined
+  notify: Restart PostgreSQL
+    
+- name: Grant privileges to DB users
+  become: yes
+  become_user: postgres
+  postgresql_privs:
+    type: database
+    database: "{{ item.database }}"
+    roles: "{{ item.roles }}"
+    privs: "{{ item.privs }}"
+  loop: "{{ db_privileges }}"
+  notify: Restart PostgreSQL
+
+- name: Grant roles to DB users
+  become: yes
+  become_user: postgres
+  postgresql_privs:
+    type: group
+    database: "{{ item.database }}"
+    objs: "{{ item.group }}"
+    roles: "{{ item.roles }}"
+  loop: "{{ group_privileges }}"
+  notify: Restart PostgreSQL
+
+- name: Enable pg_largeobject for DB user
+  include_tasks: enable_pg_largeobject.yml
+  loop: "{{ db_users }}"
+  loop_control:
+    loop_var: db_user
+  when: db_user.enable_large_object
+  tags: always
+
+- name: Allow remote DB connections
+  become: yes
+  lineinfile:
+    path: "/etc/postgresql/{{ postgresql_version }}/main/postgresql.conf"
+    regexp: '^listen_addresses\s+='
+    line: "listen_addresses = '*'"
+  notify: Restart PostgreSQL
+  tags: config
+
+- name: Set DB max_connections to 500
+  become: yes
+  lineinfile:
+    path: "/etc/postgresql/{{ postgresql_version }}/main/postgresql.conf"
+    regexp: '^max_connections\s+='
+    line: "max_connections = 500"
+  notify: Restart PostgreSQL
+  tags: config
+
+- name: Set DB shared_buffers size to 256MB
+  become: yes
+  lineinfile:
+    path: "/etc/postgresql/{{ postgresql_version }}/main/postgresql.conf"
+    regexp: '^shared_buffers\s+='
+    line: "shared_buffers = 256MB"
+  notify: Restart PostgreSQL
+  tags: config
+
+- name: Log slow queries above 500 ms
+  become: yes
+  lineinfile:
+    path: "/etc/postgresql/{{ postgresql_version }}/main/postgresql.conf"
+    regexp: '^log_min_duration_statement\s+='
+    line: "log_min_duration_statement = 500"
+  notify: Restart PostgreSQL
+  tags: config
+
+- name: Configure DB client authentication in pg_hba.conf
+  become: yes
+  template:
+    src: pg_hba.conf.j2
+    dest: "/etc/postgresql/{{ postgresql_version }}/main/pg_hba.conf"
+    owner: postgres
+    group: postgres
+    mode: '0640'
+  notify: Restart PostgreSQL
+  tags: config
+
+- name: Flush PostgreSQL restart handlers
+  meta: flush_handlers
+  tags: always

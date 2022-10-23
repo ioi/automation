@@ -1,0 +1,29 @@
+# The PostgreSQL major version to use.
+postgresql_version: 12
+
+#   dbs:
+#     - name: db_a
+#       public_schema_owner: alice
+dbs: []
+
+#   db_users:
+#     - name: alice
+#       password: alice123
+#       allowed_databases: db_a # Comma-separated list of database names to allow this user to connect to in pg_hba.conf. If not defined, will allow all databases.
+#       allowed_host_addresses: # Client IPv4/IPv6 addresses to allow for this user in pg_hba.conf.
+#         - 1.2.3.4
+#       enable_large_object: yes # Whether to grant access to pg_largeobject
+db_users: []
+
+#   db_privileges:
+#     - database: db_a
+#       roles: alice # Comma-separated list of user/group names
+#       privs: ALL # Comma-separated list of PostgreSQL privileges
+db_privileges: []
+
+
+#    group_privileges:
+#      - database: db_a
+#        roles: catto
+#        group: pg_monitor
+group_privileges: []

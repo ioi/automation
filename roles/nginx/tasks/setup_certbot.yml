@@ -1,0 +1,80 @@
+# vars:
+#   - letsencrypt_webroot_directory
+
+- name: Install Certbot
+  become: yes
+  package:
+    name: certbot
+    state: present
+  tags: packages
+
+- name: Create Let's Encrypt webroot directory
+  become: yes
+  file:
+    dest: "{{ letsencrypt_webroot_directory }}"
+    owner: www-data
+    group: www-data
+    state: directory
+
+# https://weakdh.org/
+- name: Generate dhparams file
+  become: yes
+  command: "openssl dhparam -out /etc/letsencrypt/ssl-dhparams.pem 2048"
+  args:
+    creates: /etc/letsencrypt/ssl-dhparams.pem
+  notify: Restart Nginx
+  tags: config
+
+- name: Add options-ssl-nginx.conf file
+  become: yes
+  template:
+    src: options-ssl-nginx.conf.j2
+    dest: /etc/letsencrypt/options-ssl-nginx.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify: Restart Nginx
+  tags: config
+
+- name: Add Nginx configuration for Let's Encrypt domain validation
+  become: yes
+  template:
+    src: letsencrypt.j2
+    dest: /etc/nginx/sites-available/letsencrypt
+    owner: www-data
+    group: www-data
+    mode: 0644
+  tags: config
+
+- name: Enable Nginx configuration for Let's Encrypt domain validation
+  become: yes
+  file:
+    src: /etc/nginx/sites-available/letsencrypt
+    dest: /etc/nginx/sites-enabled/letsencrypt
+    owner: www-data
+    group: www-data
+    state: link
+  notify: Restart Nginx
+  tags: config
+
+- name: Add crontab to renew certificates
+  become: yes
+  cron:
+    name: certbot-renew
+    weekday: '1'
+    hour: '3'
+    minute: '15'
+    job: "certbot renew"
+  when: letsencrypt_auto_renew
+  tags: cron
+
+- name: Add crontab to reload Nginx
+  become: yes
+  cron:
+    name: reload-nginx
+    weekday: '1'
+    hour: '3'
+    minute: '30'
+    job: "/etc/init.d/nginx reload"
+  when: letsencrypt_auto_renew
+  tags: cron

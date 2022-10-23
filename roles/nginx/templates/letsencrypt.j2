@@ -1,0 +1,14 @@
+server {
+    server_name _;
+    listen 80 default_server;
+    listen [::]:80 default_server;
+
+    # Serve Let's Encrypt domain validation challenge
+    location /.well-known/acme-challenge/ {
+        allow all;
+        autoindex off;
+        root {{ letsencrypt_webroot_directory }}/;
+        default_type "text/plain";
+        try_files $uri =404;
+    }
+}

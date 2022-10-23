@@ -1,0 +1,6 @@
+translation_repo: https://github.com/ioi/translation.git
+translation_version: master
+
+cpdf_repo: https://github.com/coherentgraphics/cpdf-binaries.git
+cpdf_version: ce3a753afd2dfa106b05181e50f43f088ab540da # Known working version
+cpdf_variant: Linux-Intel-64bit

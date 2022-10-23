@@ -1,0 +1,59 @@
+- name: Install Nginx
+  become: yes
+  package:
+    name: nginx
+    state: present
+  tags: packages
+  notify: Restart Nginx
+
+- name: Increase Nginx per-worker process open file limit
+  become: yes
+  lineinfile:
+    path: '/etc/nginx/nginx.conf'
+    regexp: '^\s*worker_rlimit_nofile\b'
+    line: 'worker_rlimit_nofile 8192;'
+  notify: Restart Nginx
+  tags: config
+
+- name: Increase Nginx worker connections
+  become: yes
+  lineinfile:
+    path: '/etc/nginx/nginx.conf'
+    regexp: '^\s*worker_connections\b'
+    line: 'worker_connections 2048;'
+  notify: Restart Nginx
+  tags: config
+
+- name: Enable the Nginx service 
+  become: yes
+  service:
+    name: nginx
+    enabled: yes
+  tags: services
+
+- name: Disable default Nginx site config
+  become: yes
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: Restart Nginx
+  tags: config
+
+- name: Set up Certbot
+  include_tasks: setup_certbot.yml
+  when: use_letsencrypt
+  tags: always
+
+- name: Install htpasswd dependencies
+  become: yes
+  package:
+    name: python3-passlib
+    state: present
+  tags: packages
+
+- name: Configure domains
+  include_tasks: configure_domain.yml
+  loop: "{{ domains }}"
+  loop_control:
+    loop_var: domain
+  tags: always

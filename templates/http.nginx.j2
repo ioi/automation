@@ -1,0 +1,8 @@
+{% block upstream_block %}{% endblock %}
+
+server {
+    listen 80;
+    listen [::]:80;
+
+{% block server_block_contents %}{% endblock %}
+}

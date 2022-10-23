@@ -1,0 +1,19 @@
+### Let's Encrypt ###
+
+use_letsencrypt: yes
+letsencrypt_service_admin_email: admin@ioinformatics.org # TODO
+
+
+### Translation App ###
+
+# translation_repo: https://github.com/ioi/translation.git
+# translation_version: master
+
+translation_db: translation_db
+translation_db_user: translation_user
+translation_db_pass: pass # TODO
+translation_secret_key: 8dcfa39add2ff08eddd1fe7adf01c343  # TODO: openssl rand -hex 16
+
+translation_fqdn: translation.ioinformatics.org # TODO
+translation_auth_basic_user: ioi
+translation_auth_basic_pass: pass # TODO

@@ -1,0 +1,6 @@
+- name: Install Redis
+  become: yes
+  package:
+    name: redis
+    state: present
+  tags: packages

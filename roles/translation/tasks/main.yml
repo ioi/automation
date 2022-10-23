@@ -1,0 +1,146 @@
+- name: Install dependencies
+  become: yes
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - python3-pip
+    - git
+    - chromium-chromedriver
+    - libxcomposite1
+    - libxcursor1
+    - libxdamage1
+    - libxtst6
+    - libnss3
+    - libcups2
+    - libxss1
+    - libxrandr2
+    - libpangocairo-1.0-0
+    - libatk1.0-0
+    - libatk-bridge2.0-0
+    - libgtk-3-0
+    - libx11-xcb1
+  tags: packages
+
+- name: Ensure that installation directory exists
+  become: yes
+  file:
+    path: "{{ item }}"
+    state: directory
+    recurse: yes
+  with_items:
+    - /opt/translation
+    - /opt/translation/scripts
+
+- name: Check out cpdf binary repository
+  become: yes
+  git:
+    repo: "{{ cpdf_repo }}"
+    version: "{{ cpdf_version }}"
+    dest: /opt/translation/cpdf
+    accept_hostkey: yes
+
+- name: Check out app repository
+  become: yes
+  git:
+    repo: "{{ translation_repo }}"
+    version: "{{ translation_version }}"
+    dest: "/opt/translation/app"
+    accept_hostkey: yes
+    depth: 1
+  register: app_git_checkout
+
+- name: Read installed app commit
+  become: yes
+  slurp:
+    src: /opt/translation/installed_app_commit
+  ignore_errors: yes
+  changed_when: no
+  register: installed_app_commit
+
+- name: Copy env script
+  become: yes
+  template:
+    src: "{{ role_path }}/templates/env.sh.j2"
+    dest: /opt/translation/scripts/env.sh
+  notify:
+    - Restart app
+
+- name: Install app
+  become: yes
+  when: app_git_checkout.get('after', '<translation_git_checkout_skipped>') != (installed_app_commit.get('content', '') | b64decode | trim)
+  block:
+    - name: Install requirements
+      pip:
+        requirements: /opt/translation/app/requirements.txt
+
+    - name: Migrate database
+      become: yes
+      shell:
+        cmd: ". scripts/env.sh; python3 app/manage.py migrate"
+        chdir: /opt/translation
+
+    - name: Import initial data
+      become: yes
+      shell:
+        cmd: ". scripts/env.sh; python3 app/manage.py loaddata app/initial_data.json"
+        chdir: /opt/translation
+
+    - name: Collect static files
+      become: yes
+      shell:
+        cmd: ". scripts/env.sh; python3 app/manage.py collectstatic --noinput"
+        chdir: /opt/translation
+
+    - name: Auto accept license for ttf-mscorefonts-installer
+      debconf:
+        name: ttf-mscorefonts-installer
+        question: msttfcorefonts/accepted-mscorefonts-eula
+        vtype: select
+        value: "true"
+
+    - name: Manually install fonts bundled with app code
+      copy:
+        src: /opt/translation/app/trans/static/fonts/
+        dest: /usr/local/share/fonts/
+        remote_src: true
+
+    - name: Install system fonts
+      package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - ttf-mscorefonts-installer
+        - fonts-noto
+
+    - name: Repopulate font cache
+      shell:
+        cmd: "fc-cache -fv"
+
+    - name: Initialize pyppeteer
+      shell:
+        cmd: 'python3 -c "import pyppeteer.command; pyppeteer.command.install()"'
+        chdir: /opt/translation
+
+- name: Write installed app git
+  become: yes
+  copy:
+    content: "{{ app_git_checkout.after }}"
+    dest: /opt/translation/installed_app_commit
+  when: app_git_checkout
+
+- name: Copy Gunicorn script
+  become: yes
+  template:
+    src: "{{ role_path }}/templates/start_gunicorn.sh.j2"
+    dest: /opt/translation/scripts/start_gunicorn.sh
+  notify:
+    - Restart app
+
+- name: Set up translation service
+  become: yes
+  template:
+    src: "{{ role_path }}/templates/translation.service.j2"
+    dest: /etc/systemd/system/translation.service
+  notify:
+    - Restart app
