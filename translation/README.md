@@ -2,8 +2,8 @@
 
 This playbook deploys [ioi/translation](https://github.com/ioi/translation).
 
-1. Launch a VM.
-1. Add the (floating) IP to the `[translation]` section in `hosts.ini`.
+1. Provision a VM.
+1. Add the (floating) IP to the `[translation]` group in `hosts.ini`.
 1. Open `vars.yml`. Fill out the following config:
    - `translation_db`
    - `translation_db_user`
