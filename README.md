@@ -14,3 +14,4 @@ This setup is designed to work with any type of host running Ubuntu 20.04. Howev
 
 - [Translation app](translation/README.md)
 - [Matrix](matrix/README.md)
+- [GitLab](gitlab/README.md)

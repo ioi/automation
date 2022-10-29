@@ -1,0 +1,29 @@
+# vars:
+#   gitlab_url: <string>
+
+- name: Install dependencies
+  become: yes
+  package:
+    name: "{{ item }}"
+    state: present
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+  with_items:
+    - curl
+    - openssh-server
+    - ca-certificates
+    - tzdata
+    - perl
+  tags: packages
+
+- name: Download GitLab packages
+  become: yes
+  shell: curl -sS https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/script.deb.sh | bash
+
+- name: Install GitLab
+  become: yes
+  package:
+    name: gitlab-ce
+    state: present
+  environment:
+    EXTERNAL_URL: "https://{{ gitlab_fqdn }}"

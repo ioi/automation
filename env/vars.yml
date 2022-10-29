@@ -19,6 +19,12 @@ translation_auth_basic_user: ioi
 translation_auth_basic_pass: pass # TODO
 
 
+### GitLab ###
+
+gitlab_fqdn: gitlab.ioinformatics.org # TODO
+gitlab_runner_registration_token: ostUmxrUyeHtDRXxuk3T # TODO
+
+
 ### Matrix ###
 
 matrix_db: synapse_db

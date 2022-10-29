@@ -1,0 +1,4 @@
+- hosts: gitlab
+  gather_facts: no
+  roles:
+    - role: gitlab
