@@ -1,0 +1,36 @@
+{% if use_letsencrypt %}{% extends "https.nginx.j2" %}{% else %}{% extends "http.nginx.j2" %}{% endif %}
+
+{% block server_block_contents %}
+    server_name {{ domain.fqdn }};
+
+    # Nginx by default only allows file uploads up to 1M in size
+    # Increase client_max_body_size to match max_upload_size defined in homeserver.yaml
+    client_max_body_size 10M;
+
+    # generic_worker
+    {% for mapurl in generic_worker_url %}
+    location ~* {{ mapurl }} { proxy_pass http://localhost:8083; }
+    {% endfor %}
+
+    # media_repository
+    {% for mapurl in media_repository_url %}
+    location ~* {{ mapurl }} { proxy_pass http://localhost:8085; }
+    {% endfor %}
+
+    # user_dir
+    {% for mapurl in user_dir_url %}
+    location ~* {{ mapurl }} { proxy_pass http://localhost:8087; }
+    {% endfor %}
+
+    # frontend_proxy
+    {% for mapurl in frontend_proxy_url %}
+    location ~* {{ mapurl }} { proxy_pass http://localhost:8088; }
+    {% endfor %}
+
+    location ~* ^(\/_matrix|\/_synapse\/client) {
+        proxy_pass http://localhost:8008;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Host $host;
+    }
+{% endblock %}

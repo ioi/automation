@@ -1,0 +1,6 @@
+- name: Restart matrix target
+  become: yes
+  service:
+    name: matrix-synapse.target
+    state: restarted
+  tags: always

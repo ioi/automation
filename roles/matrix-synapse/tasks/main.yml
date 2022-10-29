@@ -1,0 +1,103 @@
+# vars:
+#   matrix_db: string
+#   matrix_db_user: string
+#   matrix_db_pass: string
+#   matrix_registration_shared_secret: string
+#   matrix_fqdn: string
+
+- name: Install dependencies
+  become: yes
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - lsb-release
+    - wget
+    - apt-transport-https
+
+- name: Download repository keyring
+  become: yes
+  get_url:
+    url: https://packages.matrix.org/debian/matrix-org-archive-keyring.gpg
+    dest: /usr/share/keyrings/matrix-org-archive-keyring.gpg
+
+- name: Add repository to sources list
+  become: yes
+  shell: |
+    echo "deb [signed-by=/usr/share/keyrings/matrix-org-archive-keyring.gpg] https://packages.matrix.org/debian/ $(lsb_release -cs) main" |
+    sudo tee /etc/apt/sources.list.d/matrix-org.list
+
+- name: Update APT packages
+  become: yes
+  apt:
+    update_cache: yes
+
+- name: Install matrix-synapse
+  become: yes
+  package:
+    name: matrix-synapse-py3
+    state: present
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- name: Copy server_name.yaml
+  become: yes
+  template:
+    src: server_name.yaml.j2
+    dest: /etc/matrix-synapse/conf.d/server_name.yaml
+  notify: Restart matrix target
+
+- name: Copy homeserver.yaml
+  become: yes
+  template:
+    src: homeserver.yaml.j2
+    dest: /etc/matrix-synapse/homeserver.yaml
+  notify: Restart matrix target
+  tags: config
+
+- name: Copy systemd configurations
+  become: yes
+  copy:
+    src: "files/{{ item }}"
+    dest: /etc/systemd/system
+  with_items:
+    - matrix-synapse.target
+    - matrix-synapse.service
+    - matrix-synapse-worker@.service
+
+- name: Enable main service
+  become: yes
+  service:
+    name: matrix-synapse.service
+    state: restarted
+
+- name: Copy worker configs
+  become: yes
+  copy:
+    src: files/{{ item }}
+    dest: /etc/matrix-synapse/workers/
+  with_items:
+    - worker_appservice.yaml
+    - worker_federation_sender.yaml
+    - worker_frontend_proxy.yaml
+    - worker_generic_worker.yaml
+    - worker_media_repository.yaml
+    - worker_pusher.yaml
+    - worker_user_dir.yaml
+    - workers_log_config.yaml
+  notify: Restart matrix target
+  tags: config
+
+- name: Enable workers
+  become: yes
+  service:
+    name: "matrix-synapse-worker@{{ item }}.service"
+    state: restarted
+  with_items:
+    - worker_appservice
+    - worker_federation_sender
+    - worker_frontend_proxy
+    - worker_generic_worker
+    - worker_media_repository
+    - worker_pusher
+    - worker_user_dir

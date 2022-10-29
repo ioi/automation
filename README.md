@@ -13,3 +13,4 @@ This setup is designed to work with any type of host running Ubuntu 20.04. Howev
 ## 3. Deploy services
 
 - [Translation app](translation/README.md)
+- [Matrix](matrix/README.md)

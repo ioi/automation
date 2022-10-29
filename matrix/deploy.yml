@@ -1,0 +1,97 @@
+- hosts: matrix
+  roles:
+    - role: redis
+
+    - role: postgresql
+      vars:
+        dbs:
+          - name: "{{ matrix_db }}"
+        db_locale: C
+        db_users:
+          - name: "{{ matrix_db_user }}"
+            password: "{{ matrix_db_pass }}"
+            allowed_databases:
+              - "{{ matrix_db }}"
+            allowed_host_addresses:
+              - "127.0.0.1/32"
+            enable_large_object: no
+        db_privileges:
+          - database: "{{ matrix_db }}"
+            roles: "{{ matrix_db_user }}"
+            privs: ALL
+
+    - role: matrix-synapse
+
+    - role: nginx
+      vars:
+        generic_worker_url:
+          - ^/_matrix/client/(v2_alpha|r0)/sync$
+          - ^/_matrix/client/(api/v1|v2_alpha|r0)/events$
+          - ^/_matrix/client/(api/v1|r0)/initialSync$
+          - ^/_matrix/client/(api/v1|r0)/rooms/[^/]+/initialSync$
+          - ^/_matrix/federation/v1/event/
+          - ^/_matrix/federation/v1/state/
+          - ^/_matrix/federation/v1/state_ids/
+          - ^/_matrix/federation/v1/backfill/
+          - ^/_matrix/federation/v1/get_missing_events/
+          - ^/_matrix/federation/v1/publicRooms
+          - ^/_matrix/federation/v1/query/
+          - ^/_matrix/federation/v1/make_join/
+          - ^/_matrix/federation/v1/make_leave/
+          - ^/_matrix/federation/v1/send_join/
+          - ^/_matrix/federation/v2/send_join/
+          - ^/_matrix/federation/v1/send_leave/
+          - ^/_matrix/federation/v2/send_leave/
+          - ^/_matrix/federation/v1/invite/
+          - ^/_matrix/federation/v2/invite/
+          - ^/_matrix/federation/v1/query_auth/
+          - ^/_matrix/federation/v1/event_auth/
+          - ^/_matrix/federation/v1/exchange_third_party_invite/
+          - ^/_matrix/federation/v1/user/devices/
+          - ^/_matrix/federation/v1/get_groups_publicised$
+          - ^/_matrix/key/v2/query
+          - ^/_matrix/federation/v1/send/
+          - ^/_matrix/client/(api/v1|r0|unstable)/publicRooms$
+          - ^/_matrix/client/(api/v1|r0|unstable)/rooms/.*/joined_members$
+          - ^/_matrix/client/(api/v1|r0|unstable)/rooms/.*/context/.*$
+          - ^/_matrix/client/(api/v1|r0|unstable)/rooms/.*/members$
+          - ^/_matrix/client/(api/v1|r0|unstable)/rooms/.*/state$
+          - ^/_matrix/client/(api/v1|r0|unstable)/account/3pid$
+          - ^/_matrix/client/(api/v1|r0|unstable)/devices$
+          - ^/_matrix/client/(api/v1|r0|unstable)/keys/query$
+          - ^/_matrix/client/(api/v1|r0|unstable)/keys/changes$
+          - ^/_matrix/client/versions$
+          - ^/_matrix/client/(api/v1|r0|unstable)/voip/turnServer$
+          - ^/_matrix/client/(api/v1|r0|unstable)/joined_groups$
+          - ^/_matrix/client/(api/v1|r0|unstable)/publicised_groups$
+          - ^/_matrix/client/(api/v1|r0|unstable)/publicised_groups/
+          - ^/_matrix/client/(api/v1|r0|unstable)/login$
+          - ^/_matrix/client/(r0|unstable)/register$
+          - ^/_matrix/client/(r0|unstable)/auth/.*/fallback/web$
+          - ^/_matrix/client/(api/v1|r0|unstable)/rooms/.*/redact
+          - ^/_matrix/client/(api/v1|r0|unstable)/rooms/.*/send
+          - ^/_matrix/client/(api/v1|r0|unstable)/rooms/.*/state/
+          - ^/_matrix/client/(api/v1|r0|unstable)/rooms/.*/(join|invite|leave|ban|unban|kick)$
+          - ^/_matrix/client/(api/v1|r0|unstable)/join/
+          - ^/_matrix/client/(api/v1|r0|unstable)/profile/
+          - ^/_matrix/federation/v1/groups/
+          - ^/_matrix/client/(api/v1|r0|unstable)/rooms/.*/messages$
+        media_repository_url:
+          - ^/_matrix/media/
+          - ^/_synapse/admin/v1/purge_media_cache$
+          - ^/_synapse/admin/v1/room/.*/media.*$
+          - ^/_synapse/admin/v1/user/.*/media.*$
+          - ^/_synapse/admin/v1/media/.*$
+          - ^/_synapse/admin/v1/quarantine_media/.*$
+        user_dir_url:
+          - ^/_matrix/client/(api/v1|r0|unstable)/user_directory/search$
+        frontend_proxy_url:
+          - ^/_matrix/client/(api/v1|r0|unstable)/keys/upload
+          - ^/_matrix/client/(api/v1|r0|unstable)/presence/[^/]+/status
+        domains:
+          - name: matrix-synapse
+            fqdn: "{{ matrix_fqdn }}"
+            config_template: "{{ playbook_dir }}/../templates/matrix-synapse.j2"
+            auth_basic_user: ""
+            upstream_addresses:
+              - "localhost:8008"

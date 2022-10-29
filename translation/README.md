@@ -2,9 +2,11 @@
 
 This playbook deploys [ioi/translation](https://github.com/ioi/translation).
 
+## Deployment
+
 1. Provision a VM.
-1. Add the (floating) IP to the `[translation]` group in `hosts.ini`.
-1. Open `vars.yml`. Fill out the following config:
+1. Add the (floating) IP to the `[translation]` group in `env/hosts.ini`.
+1. Open `env/vars.yml`. Fill out the following config:
    - `translation_db`
    - `translation_db_user`
    - `translation_db_pass`
@@ -19,7 +21,9 @@ This playbook deploys [ioi/translation](https://github.com/ioi/translation).
 
        ansible-playbook -e @env/vars.yml -i env/hosts.ini translation/deploy.yml
 
-1. Open the app, log in as `admin` (default password: `admin`), and then change the passwords for the following auto-generated users:
-   - `admin`
-   - `staff`
-   - `ISC`
+## Configuring default users
+
+Open the app, log in as `admin` (default password: `admin`), and then change the passwords for the following auto-generated users:
+  - `admin`
+  - `staff`
+  - `ISC`

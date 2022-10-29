@@ -17,3 +17,13 @@ translation_secret_key: 8dcfa39add2ff08eddd1fe7adf01c343  # TODO: openssl rand -
 translation_fqdn: translation.ioinformatics.org # TODO
 translation_auth_basic_user: ioi
 translation_auth_basic_pass: pass # TODO
+
+
+### Matrix ###
+
+matrix_db: synapse_db
+matrix_db_user: synapse_user
+matrix_db_pass: pass # TODO
+matrix_registration_shared_secret: 8dcfa39add2ff08eddd1fe7adf01c343 # TODO: openssl rand -hex 16
+
+matrix_fqdn: matrix.ioinformatics.org # TODO

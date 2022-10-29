@@ -1,0 +1,15 @@
+worker_app: synapse.app.media_repository
+worker_name: worker_media_repository
+
+# The replication listener on the main synapse process.
+worker_replication_host: 127.0.0.1
+worker_replication_http_port: 9093
+
+worker_listeners:
+ - type: http
+   port: 8085
+   resources:
+     - names:
+       - media
+
+worker_log_config: /etc/matrix-synapse/workers/workers_log_config.yaml
