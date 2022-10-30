@@ -10,7 +10,7 @@ This playbook deploys [Omnibus GitLab](https://docs.gitlab.com/omnibus/).
 
 1. Deploy:
 
-       ansible-playbook -e @env/vars.yml -i env/hosts.ini gitlab/deploy.yml
+       ansible-playbook -i env/hosts.ini -e @env/vars.yml gitlab/deploy.yml
 
    (This could take some time.)
 
@@ -29,7 +29,7 @@ This assumes the runner is in the same host as GitLab.
 
 1. Deploy:
 
-       ansible-playbook -e @env/vars.yml -i env/hosts.ini gitlab/deploy_runner.yml
+       ansible-playbook -i env/hosts.ini -e @env/vars.yml gitlab/deploy_runner.yml
 
 1. Verify that there is a new online runner on https://{{gitlab_fqdn}}/admin/runners.
 

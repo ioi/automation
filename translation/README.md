@@ -19,7 +19,7 @@ This playbook deploys [ioi/translation](https://github.com/ioi/translation).
 
 1. Deploy:
 
-       ansible-playbook -e @env/vars.yml -i env/hosts.ini translation/deploy.yml
+       ansible-playbook -i env/hosts.ini -e @env/vars.yml translation/deploy.yml
 
 ## Configuring default users
 
