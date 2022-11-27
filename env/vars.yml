@@ -1,7 +1,67 @@
 ### Let's Encrypt ###
 
 use_letsencrypt: yes
-letsencrypt_service_admin_email: admin@ioinformatics.org # TODO
+letsencrypt_service_admin_email: info@ioinformatics.org # TODO
+
+
+### CMS ###
+
+# cms_repo: https://github.com/ioi/cms.git
+# cms_version: master
+
+cms_db: cmsdb
+cms_db_user: cmsuser
+cms_db_pass: 9e5606468d9a0155ff5b6690492a443b # TODO: openssl rand -hex 16
+cms_db_host: "{{ groups['cms_db'][0] }}"
+
+cms_secret_key: 2bc11143e35c73f1b19ae273d1f731c9 # TODO: openssl rand -hex 16
+
+cms_contest_web_services_per_host: 2
+cms_contest_web_fqdn: cms.ioinformatics.org # TODO
+
+cms_admin_web_fqdn: admin.ioinformatics.org # TODO
+cms_admin_web_auth_basic_user: ioi
+cms_admin_web_auth_basic_pass: pass # TODO
+
+cms_ranking_user: cmsuser
+cms_ranking_pass: 2701ad45fa66613762a921b7b11e016d # TODO: openssl rand -hex 16
+
+cms_ranking_fqdn: ranking.ioinformatics.org # TODO
+
+cms_worker_services_per_host: 1
+cms_worker_services_per_host_options:
+  # Example for c4.xlarge - 2 physical CPU cores
+  - cpu_cores: '1' # Worker locked to second CPU core
+    memory_node: 0 # Worker locked to first NUMA node (CPU socket)
+
+cms_worker_host_slots: [
+  10.0.0.101,
+  10.0.0.102,
+  10.0.0.103,
+  10.0.0.104,
+  10.0.0.105,
+  10.0.0.106,
+  10.0.0.107,
+  10.0.0.108,
+  10.0.0.109,
+]
+
+
+### Isolate ###
+
+# isolate_repo: https://github.com/ioi/isolate.git
+# isolate_version: eb2607a4db78db285071c72d40bd438edf8921e1
+
+isolate_optimizations:
+  disable_swap: yes
+  disable_aslr: yes
+  disable_transparent_hugepages: yes
+  disable_transparent_hugepage_defrag: yes
+  disable_khugepaged_defrag: yes
+  # disable_hyperthreading: yes
+  # reserved_cpu_cores: '24-47'
+  # intel_set_max_cstate_to_c1: yes
+  # intel_lock_to_max_non_turbo_frequency: yes
 
 
 ### Translation App ###

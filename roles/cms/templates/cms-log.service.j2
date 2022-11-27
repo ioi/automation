@@ -1,0 +1,11 @@
+[Unit]
+Description=CMS log service
+Documentation=https://cms.readthedocs.io/en/latest/Introduction.html#services
+PartOf=cms.service
+After=local-fs.target
+Before=cms.service
+ 
+[Service]
+Type=simple
+User=cmsuser
+ExecStart=/usr/local/bin/cmsLogService

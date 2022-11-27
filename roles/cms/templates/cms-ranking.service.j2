@@ -1,0 +1,13 @@
+[Unit]
+Description=CMS ranking service
+Documentation=https://cms.readthedocs.io/en/latest/Introduction.html#services
+Wants=cms-log.service
+After=postgresql.service nginx.service
+ 
+[Service]
+Type=simple
+User=cmsrankinguser
+ExecStart=/usr/local/bin/cmsRankingWebServer
+
+[Install]
+WantedBy=basic.target

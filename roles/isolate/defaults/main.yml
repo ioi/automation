@@ -1,0 +1,27 @@
+isolate_repo: https://github.com/ioi/isolate.git
+isolate_version: eb2607a4db78db285071c72d40bd438edf8921e1
+
+# User group that can execute the Isolate binary without root (using setuid).
+# WARNING: all users that can execute Isolate can practically run all binaries as root.
+isolate_group: isolate
+
+# Constrain ranges of Isolate boxes to specific CPU cores and NUMA memory nodes (CPU sockets).
+# - box_ids: <list> # List of box IDs
+#   cpu_cores: <string> # CPU cores to constrain this range of boxes to, e.g. '4-7', '1,2,3', '1-3,6-7'
+#   memory_node: <number> # NUMA memory node (CPU socket) to constrain this range of boxes to
+isolate_cpusets: []
+
+# See apply_optimizations.yml for details
+isolate_optimizations:
+  disable_swap: omit
+  disable_aslr: omit
+  disable_transparent_hugepages: omit
+  disable_transparent_hugepage_defrag: omit
+  disable_khugepaged_defrag: omit
+  disable_hyperthreading: omit
+
+  reserved_cpu_cores: omit
+
+  intel_set_max_cstate_to_c1: omit
+  intel_lock_to_max_non_turbo_frequency: omit
+  intel_rdt: omit

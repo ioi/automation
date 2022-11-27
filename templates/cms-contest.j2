@@ -1,0 +1,58 @@
+{% if use_letsencrypt %}{% extends "https.nginx.j2" %}{% else %}{% extends "http.nginx.j2" %}{% endif %}
+
+{% block upstream_block %}
+upstream contest_web_service {
+    # Always direct requests from a client IP to the same upstream (sticky/persistent session)
+    hash $remote_addr;
+
+    {% for upstream_address in domain.upstream_addresses %}
+    server {{ upstream_address }};
+    {% endfor %}
+}
+{% endblock %}
+
+{% block server_block_contents %}
+    server_name {{ domain.fqdn }};
+
+    # Don't log favicon requests
+    location = /favicon.ico { access_log off; log_not_found off; }
+
+    # Serve STL docs as static files directly from Nginx
+    location /stl/ {
+        alias /usr/share/cppreference/doc/html/;
+    }
+    # The STL docs pages would sometimes refer to these missing paths.
+    # We disable HTTP 404 errors for these to avoid cluttering the logs.
+    location /mwiki/ { access_log off; log_not_found off; }
+    location /upload.cppreference.com/ { access_log off; log_not_found off; }
+
+    root /var/www/html;
+
+    # Proxy upstream
+    location / {
+        client_max_body_size 128M;
+
+        include proxy_params;
+
+        # Disable keepalive connections
+        proxy_set_header Connection "";
+
+        # Disable cache
+        proxy_hide_header "Cache-Control";
+        add_header 'Cache-Control' "no-store, no-cache, must-revalidate, max-age=0";
+
+        proxy_http_version 1.1;
+        proxy_connect_timeout 60;
+
+        # Pass upstream response to the client immediately
+        proxy_buffering off;
+
+        proxy_pass http://contest_web_service;
+
+        {% if domain.auth_basic_user != '' %}
+        # HTTP basic authentication
+        auth_basic "Authorized users only";
+        auth_basic_user_file /etc/nginx/passwords/{{ domain.name }};
+        {% endif %}
+    }
+{% endblock %}

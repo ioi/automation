@@ -1,0 +1,18 @@
+# Isolate execution time consistency optimizations
+
+{% if isolate_optimizations.reserved_cpu_cores is defined %}
+# Isolate these CPU cores from the OS general scheduler. Prevents most tasks from
+# being scheduled on these cores unless explicitly set to.
+GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT isolcpus={{ isolate_optimizations.reserved_cpu_cores }}"
+{% endif %}
+
+{% if isolate_optimizations.intel_set_max_cstate_to_c1 | default(false) %}
+# Set CPU maximum C-state to C1 to prevent the CPU going into deeper idle states using intel_pstate driver.
+GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT intel_idle.max_cstate=1"
+{% endif %}
+
+{% if isolate_optimizations.intel_rdt is defined %}
+# Enable Intel Resource Director Technology (RDT) features.
+# Only supported on certain models.
+GRUB_CMDLINE_LINUX_DEFAULT="$GRUB_CMDLINE_LINUX_DEFAULT rdt=cmt,mbmtotal,mbmlocal,l3cat,l3cdp,mba"
+{% endif %}

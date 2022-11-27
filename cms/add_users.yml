@@ -1,0 +1,15 @@
+- hosts: cms_admin_web[0]
+  gather_facts: no
+  tasks:
+    - name: Add CMS users
+      block:
+        - name: Read users CSV file
+          delegate_to: localhost
+          read_csv:
+            path: "{{ inventory_dir }}/data/users.csv"
+          check_mode: no # Run even when Ansible is run in check mode
+          register: cms_users
+
+        - name: Run cmsAddUser
+          command: "cmsAddUser -p '{{ item.password }}' -e '{{ item.email }}' \"{{ item.first_name }}\" \"{{ item.last_name }}\" '{{ item.username }}'"
+          with_items: "{{ cms_users.list }}"

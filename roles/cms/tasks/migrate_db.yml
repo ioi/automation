@@ -1,0 +1,16 @@
+- name: Check whether the any table exists in the CMS database's public schema
+  become: yes
+  become_user: postgres
+  postgresql_query:
+    db: "{{ cms_db }}"
+    query: "SELECT tablename FROM pg_tables WHERE schemaname = 'public'"
+  check_mode: no # Run even when Ansible is run in check mode
+  register: cms_db_tables_query_result
+  delegate_to: "{{ groups['cms_db'][0] }}"
+  tags: migrate
+
+- name: Migrate CMS database
+  command: cmsInitDB
+  when: cms_db_tables_query_result.rowcount == 0
+  notify: Restart CMS
+  tags: migrate

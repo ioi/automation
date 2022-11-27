@@ -1,0 +1,15 @@
+- hosts: cms_admin_web[0]
+  gather_facts: no
+  tasks:
+    - name: Add CMS admins
+      block:
+        - name: Read admins CSV file
+          delegate_to: localhost
+          read_csv:
+            path: "{{ inventory_dir }}/data/admins.csv"
+          check_mode: no # Run even when Ansible is run in check mode
+          register: cms_admins
+
+        - name: Run cmsAddAdmin
+          command: "cmsAddAdmin '{{ item.username }}' -p '{{ item.password }}'"
+          with_items: "{{ cms_admins.list }}"

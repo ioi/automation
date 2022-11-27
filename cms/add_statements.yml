@@ -1,0 +1,27 @@
+- hosts: cms_admin_web[0]
+  gather_facts: no
+  tasks:
+    - name: Delete existing statements
+      file:
+        path: /tmp/final_pdf/
+        state: absent
+
+    - name: Upload statements
+      synchronize:
+        src: "{{ inventory_dir }}/data/final_pdf/"
+        dest: /tmp/final_pdf/
+        use_ssh_args: yes
+
+    - name: List tasks
+      find:
+        paths: /tmp/final_pdf/
+        file_type: directory
+      register: tasks
+
+    - name: Add task statements
+      include_role:
+        name: statements
+      loop: "{{ tasks.files | map(attribute='path') | map('basename') | list }}"
+      loop_control:
+        loop_var: task
+      tags: always

@@ -1,0 +1,12 @@
+- name: List statements for {{ task }}
+  find:
+    paths: "/tmp/final_pdf/{{ task }}"
+    file_type: file
+  register: statements
+
+- name: Add task statement
+  become: yes
+  command: "cmsAddStatement {% if file[:-4] | basename == 'en' %}-d{% endif %} -o {{ task }} {{ file[:-4] | basename }} {{ file }}"
+  loop: "{{ statements.files | map(attribute='path') | list }}"
+  loop_control:
+    loop_var: file

@@ -1,0 +1,127 @@
+# vars:
+#   isolate_optimizations:
+#     # Userspace optimizations (can be enabled after boot)
+#     disable_swap: <boolean>
+#     disable_aslr: <boolean>
+#     disable_transparent_hugepages: <boolean>
+#     disable_transparent_hugepage_defrag: <boolean>
+#     disable_khugepaged_defrag: <boolean>
+#
+#     # Requires write access to /sys/devices/system/cpu/smt/control (requires a bare metal machine)
+#     disable_hyperthreading: <boolean>
+#
+#     # Requires setting kernel params using Grub (requires a bare metal machine)
+#     reserved_cpu_cores: <string> # set isolcpus kernel param. Values follow cpuset syntax, e.g. '24-47', '1,2,3', '1-2,5-6' (optional)
+#
+#     # Intel-specific CPU optimizations (on supported models only)
+#     # Requires setting kernel params using Grub (requires a bare metal machine)
+#     intel_set_max_cstate_to_c1: <boolean> # set intel_idle.max_cstate to C1 (optional)
+#     intel_lock_to_max_non_turbo_frequency: <boolean> # disable TurboBoost and set frequency to the maximum non-turbo frequency using intel_pstate driver (optional)
+#     intel_rdt: # (optional)
+#       default_cos:
+#         l3cat_mask: <string> # Hexadecimal bitmask(s) of cache ways to assign to this CoS, e.g. '0=7ff;1=600' to use all 11 cache ways (0-10) for socket 0 and cache ways 9-10 for socket 1 (optional)
+#         mba_percentage: <string> # Percentage of memory bandwidth to use for this CoS for each socket, e.g. '0=100;1=20' to use 100% bandwidth for socket 0 and 20% bandwidth for socket 1 (optional)
+#       custom_cos:
+#         - name: <string> # Name used to identify this class-of-service
+#           cpu_core_mask: <tring> # Hexadecimal bitmask of CPU cores to assign to this CoS, split into 32-bit numbers, e.g. '0,0,3000000' means cores 24-25
+#           l3cat_mask: <string> # Hexadecimal bitmask(s) of cache ways to assign to this CoS for each socket, e.g. '0=7ff;1=600' to use all 11 cache ways (0-10) for socket 0 and cache ways 9-10 for socket 1 (optional)
+#           mba_percentage: <string> # Percentage of memory bandwidth to use for this CoS for each socket, e.g. '0=100;1=20' to use 100% bandwidth for socket 0 and 20% bandwidth for socket 1 (optional)
+#           ...
+
+
+# TODO: if no optimization is enabled, should not fail
+
+
+# Write an empty Isolate optimizations Grub config file, so that if the actual config file is written and it is empty,
+# write_grub_config.changed would be False, and we don't need to regenerate Grub config and reboot.
+# However, we should still regenerate Grub config and reboot if this file is changed later.
+- name: Write empty Isolate optimizations Grub config file
+  become: yes
+  template:
+    src: 90-isolate-optimizations.cfg.empty.j2
+    dest: /etc/default/grub.d/90-isolate-optimizations.cfg
+    owner: root
+    group: root
+    mode: '0644'
+    force: no # Only write this file if it doesn't exist yet.
+  tags:
+    - config
+    - optimizations
+
+- name: Write Isolate optimizations Grub config
+  become: yes
+  template:
+    src: 90-isolate-optimizations.cfg.j2
+    dest: /etc/default/grub.d/90-isolate-optimizations.cfg
+    owner: root
+    group: root
+    mode: '0644'
+  register: write_grub_config
+  tags:
+    - config
+    - optimizations
+
+- name: Regenerate Grub config
+  become: yes
+  shell: update-grub
+  when: write_grub_config is defined and write_grub_config.changed
+
+- name: Copy Isolate boot-time optimizations service file
+  become: yes
+  template:
+    src: isolate-optimizations.service.j2
+    dest: /etc/systemd/system/isolate-optimizations.service
+    owner: root
+    group: root
+    mode: '0644'
+  tags:
+    - services
+    - optimizations
+
+- name: Enable Isolate boot-time optimizations to start automatically on boot
+  become: yes
+  service:
+    name: isolate-optimizations
+    enabled: yes
+    daemon_reload: yes
+  tags:
+    - services
+    - optimizations
+
+- name: Apply Isolate boot-time optimizations
+  become: yes
+  service:
+    name: isolate-optimizations
+    state: started
+  when: write_grub_config is defined and not write_grub_config.changed
+  tags:
+    - services
+    - optimizations
+
+- name: Reboot machine
+  become: yes
+  reboot:
+    reboot_timeout: 1200 # 20 minutes
+  when: write_grub_config is defined and write_grub_config.changed
+  tags:
+    - reboot
+    - optimizations
+
+- name: Run isolate-check-environment tool
+  become: yes
+  shell: /opt/isolate/isolate-check-environment
+  ignore_errors: yes
+  changed_when: no # This task doesn't change any state or config
+  check_mode: no # Run even when Ansible is run in check mode
+  register: isolate_check_environment_result
+  tags: check_environment
+
+- debug:
+    msg: "isolate-check-environment STDOUT:\n\n{{ isolate_check_environment_result.stdout }}"
+  when: isolate_check_environment_result is defined
+  tags: check_environment
+
+- debug:
+    msg: "isolate-check-environment STDERR:\n\n{{ isolate_check_environment_result.stderr }}"
+  when: isolate_check_environment_result is defined
+  tags: check_environment

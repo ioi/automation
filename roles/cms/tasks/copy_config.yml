@@ -1,0 +1,22 @@
+- name: Copy cms.conf file
+  become: yes
+  template:
+    src: cms.conf.j2
+    dest: /usr/local/etc/cms.conf
+    owner: cmsuser
+    group: cmsuser
+    mode: '0660'
+  notify: Restart CMS
+  tags: config
+
+- name: Copy cms.ranking.conf file
+  become: yes
+  template:
+    src: cms.ranking.conf.j2
+    dest: /usr/local/etc/cms.ranking.conf
+    owner: cmsrankinguser
+    group: cmsrankinguser
+    mode: '0640'
+  when: '"cms_ranking" in services'
+  notify: Restart CMS ranking service
+  tags: config

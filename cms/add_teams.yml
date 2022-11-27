@@ -1,0 +1,15 @@
+- hosts: cms_admin_web[0]
+  gather_facts: no
+  tasks:
+    - name: Add CMS teams
+      block:
+        - name: Read teams CSV file
+          delegate_to: localhost
+          read_csv:
+            path: "{{ inventory_dir }}/data/teams.csv"
+          check_mode: no # Run even when Ansible is run in check mode
+          register: cms_teams
+
+        - name: Run cmsAddTeam
+          command: "cmsAddTeam '{{ item.code }}' '{{ item.name }}'"
+          with_items: "{{ cms_teams.list }}"

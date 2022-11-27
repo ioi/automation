@@ -1,0 +1,15 @@
+- name: Restart CMS
+  become: yes
+  service:
+    name: cms
+    daemon_reload: yes # Needed to reload changes in the service files as they contain template parameters.
+    state: restarted
+  when: services | length
+  tags: always
+
+- name: Restart CMS ranking service
+  become: yes
+  service:
+    name: cms-ranking
+    state: restarted
+  tags: always

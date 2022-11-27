@@ -1,0 +1,16 @@
+# vars:
+#   - contest_id
+
+- hosts: cms_admin_web[0]
+  gather_facts: no
+  tasks:
+    - name: Read users CSV file
+      delegate_to: localhost
+      read_csv:
+        path: "{{ inventory_dir }}/data/users.csv"
+      check_mode: no # Run even when Ansible is run in check mode
+      register: cms_users
+
+    - name: Run cmsAddParticipation
+      command: "cmsAddParticipation -c {{ contest_id }} --t '{{ item.team_code }}' -p '{{ item.password }}' --ip '{{ item.ip }}/32' '{{ item.username }}'"
+      with_items: "{{ cms_users.list }}"

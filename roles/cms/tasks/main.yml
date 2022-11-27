@@ -1,0 +1,222 @@
+- name: Install CMS base prerequisite packages
+  become: yes
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - git
+    - postgresql-client
+    - libpq-dev
+    - python3.8
+    - python3.8-dev
+    - python3-pip
+    - libyaml-dev
+    - zip
+    - libffi-dev
+    - build-essential # Required to build some CMS Python dependencies
+    - libcups2-dev # Required by pycups CMS Python dependency
+  tags: packages
+  notify: Restart CMS
+
+- name: Install CMS contest web service prerequisite packages
+  become: yes
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - cppreference-doc-en-html
+  tags: packages
+  when: '"cms_contest_web" in services'
+  notify: Restart CMS
+
+- name: Install CMS worker service prerequisite packages
+  become: yes
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - cgroup-lite
+    - libcap-dev
+    - g++-9
+    - python3.8
+    - python3.8-dev
+  tags: packages
+  when: '"cms_worker" in services'
+  notify: Restart CMS
+
+- name: Create CMS group
+  become: yes
+  group:
+    name: cmsuser
+    system: yes
+  notify: Restart CMS
+
+- name: Create CMS user
+  become: yes
+  user:
+    name: cmsuser
+    group: cmsuser
+    comment: CMS default user
+    create_home: no
+    shell: /bin/false
+    system: yes
+  notify: Restart CMS
+
+- name: Create CMS ranking user
+  become: yes
+  user:
+    name: cmsrankinguser
+    comment: CMS ranking service user
+    create_home: no
+    shell: /bin/false
+  when: '"cms_ranking" in services'
+  notify: Restart CMS ranking service
+
+- name: Add additional users to the CMS user group
+  become: yes
+  user:
+    name: "{{ item }}"
+    groups: cmsuser
+    append: yes
+  loop: "{{ additional_cms_users }}"
+  notify: Restart CMS
+
+- name: Reset SSH connection to allow user changes to affect current Ansible user
+  meta: reset_connection
+
+- name: Ensure CMS repo directory exists
+  become: yes
+  file:
+    path: /opt/cms
+    owner: cmsuser
+    group: cmsuser
+    mode: '0775'
+    follow: yes
+    state: directory
+
+- name: Ensure CMS parent directories exist
+  become: yes
+  file:
+    path: "{{ item }}"
+    owner: root
+    group: root
+    mode: '0755'
+    follow: no
+    state: directory
+  with_items:
+    - /var/local/log
+    - /var/local/cache
+    - /var/local/lib
+    - /var/local/run
+    - /usr/local/include
+    - /usr/local/share
+
+- name: Ensure CMS directories exist
+  become: yes
+  file:
+    path: "{{ item }}"
+    owner: cmsuser
+    group: cmsuser
+    mode: '0770'
+    follow: yes
+    state: directory
+  with_items:
+    - /var/local/cache/cms
+    - /var/local/run/cms
+    - /usr/local/include/cms
+    - /usr/local/share/cms
+
+- name: Ensure CMS and CMS ranking parent directories exist
+  become: yes
+  file:
+    path: "{{ item }}"
+    owner: cmsuser
+    group: cmsuser
+    mode: '0775'
+    follow: yes
+    state: directory
+  with_items:
+    - /var/local/log/cms
+    - /var/local/lib/cms
+
+- name: Ensure CMS ranking directory exists
+  become: yes
+  file:
+    path: "{{ item }}"
+    owner: cmsrankinguser
+    group: cmsrankinguser
+    mode: '0755'
+    follow: yes
+    state: directory
+  with_items:
+    - /var/local/lib/cms/ranking
+    - /var/local/log/cms/ranking
+  when: '"cms_ranking" in services'
+
+- name: Check out the CMS repository
+  become: yes
+  become_user: cmsuser
+  git:
+    repo: "{{ cms_repo }}"
+    version: "{{ cms_version }}"
+    dest: /opt/cms
+    accept_hostkey: yes
+    depth: 1
+  register: cms_git_checkout_result
+
+- name: Read cms_installed_git_commit file
+  slurp:
+    src: /opt/cms_installed_git_commit
+  ignore_errors: yes
+  changed_when: no
+  check_mode: no # Run even when Ansible is run in check mode
+  register: slurp_cms_installed_git_commit_result
+
+- name: Install CMS Python requirements
+  become: yes
+  pip:
+    requirements: /opt/cms/requirements.txt
+  when: cms_git_checkout_result.get('after', '<cms_git_checkout_skipped>') != (slurp_cms_installed_git_commit_result.get('content', '') | b64decode | trim)
+  notify: Restart CMS
+
+- name: Install CMS
+  become: yes
+  pip:
+    name: /opt/cms
+  when: cms_git_checkout_result.get('after', '<cms_git_checkout_skipped>') != (slurp_cms_installed_git_commit_result.get('content', '') | b64decode | trim)
+  notify: Restart CMS
+
+- name: Write latest Git commit hash to cms_installed_git_commit file
+  become: yes
+  template:
+    src: cms_installed_git_commit.j2
+    dest: /opt/cms_installed_git_commit
+    owner: cmsuser
+    mode: '0664'
+
+- name: Copy Polygon testlib
+  become: yes
+  copy:
+    src: /opt/cms/cmscontrib/loaders/polygon/testlib.h
+    dest: /usr/local/include/cms/testlib.h
+    remote_src: yes
+    follow: yes
+    owner: root
+    group: root
+
+- name: Copy CMS configuration file
+  include_tasks: copy_config.yml
+  tags: always
+
+- name: Migrate CMS DB
+  include_tasks: migrate_db.yml
+  when: run_db_migration | bool
+  tags: always
+
+- name: Create and enable CMS systemd services
+  include_tasks: setup_services.yml
+  tags: always
+
+- name: Flush CMS restart handlers
+  meta: flush_handlers
+  tags: always

@@ -1,0 +1,24 @@
+cms_repo: https://github.com/ioi/cms
+cms_version: master
+
+# Which CMS services to deploy.
+services:
+  - cms_scoring
+  - cms_checker
+  - cms_evaluation
+  - cms_worker
+  - cms_contest_web
+  - cms_admin_web
+  - cms_proxy
+  - cms_ranking
+
+# Usernames to add to the CMS user group.
+additional_cms_users: []
+
+# Whether to migrate the CMS DB if it doesn't exist yet. Enable on exactly 1 host.
+run_db_migration: no
+
+# The contest ID to serve. Can be one of the following:
+#   - 'ALL': when the contest web is opened, a menu listing all available contests will be displayed.
+#   - Any contest ID (obtained from the URL of the contest in the admin web): the contest web will directly enter the specified contest when opened.
+contest_id: ALL

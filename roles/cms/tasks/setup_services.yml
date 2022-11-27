@@ -1,0 +1,57 @@
+# vars:
+#   contest_id: <number | 'ALL'>
+#   services: <string>
+
+- name: Copy CMS log service file
+  become: yes
+  template:
+    src: cms-log.service.j2
+    dest: /etc/systemd/system/cms-log.service
+    owner: root
+    group: root
+    mode: '0644'
+  when: '"cms_log" in services'
+  notify: Restart CMS
+  tags: services
+
+# The cms-log service is configured to be part of the cms service,
+# so it will be started and stopped together with the cms service.
+- name: Copy CMS resource service file
+  become: yes
+  template:
+    src: cms.service.j2
+    dest: /etc/systemd/system/cms.service
+    owner: root
+    group: root
+    mode: '0644'
+  when: "services is defined and (services | length) > 0"
+  notify: Restart CMS
+  tags: services
+
+- name: Enable the CMS service
+  become: yes
+  service:
+    name: cms
+    enabled: yes
+  when: "services is defined and (services | length) > 0"
+  tags: services
+
+- name: Copy CMS ranking service file
+  become: yes
+  template:
+    src: cms-ranking.service.j2
+    dest: /etc/systemd/system/cms-ranking.service
+    owner: root
+    group: root
+    mode: '0644'
+  when: '"cms_ranking" in services'
+  notify: Restart CMS ranking service
+  tags: services
+
+- name: Enable the CMS ranking service
+  become: yes
+  service:
+    name: cms-ranking
+    enabled: yes
+  when: '"cms_ranking" in services'
+  tags: services

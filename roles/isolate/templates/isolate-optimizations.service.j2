@@ -1,0 +1,86 @@
+[Unit]
+Description=Optimizations for increasing reproducibility of Isolate sandbox executions
+Documentation=https://github.com/ioi/isolate/blob/master/isolate.1.txt
+DefaultDependencies=no
+After=sysinit.target local-fs.target
+
+[Service]
+Type=oneshot
+
+{% if isolate_optimizations.disable_swap | default(false) %}
+# Disable swap
+ExecStart=swapoff -a
+{% endif %}
+
+{% if isolate_optimizations.disable_aslr | default(false) %}
+# Disable address space layout randomization
+ExecStart=/bin/sh -c 'echo 0 > /proc/sys/kernel/randomize_va_space'
+{% endif %}
+
+{% if isolate_optimizations.disable_transparent_hugepages | default(false) %}
+# Disable transparent hugepages
+ExecStart=/bin/sh -c 'echo "never" > /sys/kernel/mm/transparent_hugepage/enabled'
+{% endif %}
+
+{% if isolate_optimizations.disable_transparent_hugepage_defrag | default(false) %}
+# Disable transparent hugepage defrag
+ExecStart=/bin/sh -c 'echo "never" > /sys/kernel/mm/transparent_hugepage/defrag'
+{% endif %}
+
+{% if isolate_optimizations.disable_khugepaged_defrag | default(false) %}
+# Disable khugepaged defrag
+ExecStart=/bin/sh -c 'echo 0 > /sys/kernel/mm/transparent_hugepage/khugepaged/defrag'
+{% endif %}
+
+{% if isolate_optimizations.disable_hyperthreading | default(false) %}
+# Disable hyperthreading
+ExecStart=/bin/sh -c 'echo "off" > /sys/devices/system/cpu/smt/control'
+{% endif %}
+
+{% if isolate_optimizations.intel_lock_to_max_non_turbo_frequency | default(false) %}
+# Disable Intel TurboBoost. Requires intel_pstate driver to be enabled.
+ExecStart=/bin/sh -c 'echo 1 > /sys/devices/system/cpu/intel_pstate/no_turbo'
+
+# Set intel_pstate minimum and maximum performance percentage to the maximum value without TurboBoost.
+# Requires intel_pstate driver to be enabled.
+ExecStart=/bin/sh -c 'echo $(( 100 - $(cat /sys/devices/system/cpu/intel_pstate/turbo_pct) )) > /sys/devices/system/cpu/intel_pstate/min_perf_pct'
+ExecStart=/bin/sh -c 'echo $(( 100 - $(cat /sys/devices/system/cpu/intel_pstate/turbo_pct) )) > /sys/devices/system/cpu/intel_pstate/max_perf_pct'
+{% endif %}
+
+{% if isolate_optimizations.intel_rdt is defined %}
+# Mount Intel RDT resource control virtual file system if it is not mounted yet.
+ExecStart=/bin/sh -c 'if ! mountpoint -q /sys/fs/resctrl; then mount -t resctrl resctrl /sys/fs/resctrl; fi'
+
+# Create Intel RDT CoS (class-of-service)
+{% for cos in isolate_optimizations.intel_rdt.custom_cos %}
+ExecStart=mkdir -p '/sys/fs/resctrl/{{ cos.name }}'
+{% endfor %}
+
+# Assign CPU cores for each CoS
+{% for cos in isolate_optimizations.intel_rdt.custom_cos %}
+ExecStart=/bin/sh -c 'echo "{{ cos.cpu_core_mask }}" > "/sys/fs/resctrl/{{ cos.name }}/cpus"'
+{% endfor %}
+
+# Split L3 cache ways for each CoS using Intel RDT L3CAT (L3 Cache Allocation Technology) feature
+{% for cos in isolate_optimizations.intel_rdt.custom_cos %}{% if cos.l3cat_mask is defined %}
+ExecStart=/bin/sh -c 'echo "L3:{{ cos.l3cat_mask }}" > "/sys/fs/resctrl/{{ cos.name }}/schemata"'
+{% endif %}{% endfor %}
+
+{% if isolate_optimizations.intel_rdt.default_cos.l3cat_mask is defined %}
+# Set L3 cache ways used by the default CoS using Intel RDT L3CAT (L3 Cache Allocation Technology) feature
+ExecStart=/bin/sh -c 'echo "L3:{{ isolate_optimizations.intel_rdt.default_cos.l3cat_mask }}" > /sys/fs/resctrl/schemata'
+{% endif %}
+
+# Throttle memory bandwidth for each CoS using Intel RDT MBA (Memory Bandwidth Allocation) feature
+{% for cos in isolate_optimizations.intel_rdt.custom_cos %}{% if cos.mba_percentage is defined %}
+ExecStart=/bin/sh -c 'echo "MB:{{ cos.mba_percentage }}" > "/sys/fs/resctrl/{{ cos.name }}/schemata"'
+{% endif %}{% endfor %}
+
+{% if isolate_optimizations.intel_rdt.default_cos.mba_percentage is defined %}
+# Throttle memory bandwidth used by the default CoS using Intel RDT MBA (Memory Bandwidth Allocation) feature
+ExecStart=/bin/sh -c 'echo "MB:{{ isolate_optimizations.intel_rdt.default_cos.mba_percentage }}" > /sys/fs/resctrl/schemata'
+{% endif %}
+{% endif %}
+
+[Install]
+WantedBy=basic.target
