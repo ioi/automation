@@ -11,7 +11,7 @@ letsencrypt_service_admin_email: info@ioinformatics.org # TODO
 
 cms_db: cmsdb
 cms_db_user: cmsuser
-cms_db_pass: 9e5606468d9a0155ff5b6690492a443b # TODO: openssl rand -hex 16
+cms_db_pass: pass # TODO: random password
 cms_db_host: "{{ groups['cms_db'][0] }}"
 
 cms_secret_key: 2bc11143e35c73f1b19ae273d1f731c9 # TODO: openssl rand -hex 16
@@ -24,7 +24,7 @@ cms_admin_web_auth_basic_user: ioi
 cms_admin_web_auth_basic_pass: pass # TODO
 
 cms_ranking_user: cmsuser
-cms_ranking_pass: 2701ad45fa66613762a921b7b11e016d # TODO: openssl rand -hex 16
+cms_ranking_pass: pass # TODO: random password
 
 cms_ranking_fqdn: ranking.ioinformatics.org # TODO
 
@@ -71,7 +71,7 @@ isolate_optimizations:
 
 translation_db: translation_db
 translation_db_user: translation_user
-translation_db_pass: pass # TODO
+translation_db_pass: pass # TODO: random password
 translation_secret_key: 8dcfa39add2ff08eddd1fe7adf01c343  # TODO: openssl rand -hex 16
 
 translation_fqdn: translation.ioinformatics.org # TODO
@@ -82,14 +82,14 @@ translation_auth_basic_pass: pass # TODO
 ### GitLab ###
 
 gitlab_fqdn: gitlab.ioinformatics.org # TODO
-gitlab_runner_registration_token: ostUmxrUyeHtDRXxuk3T # TODO
+gitlab_runner_registration_token: pass # TODO: random password
 
 
 ### Matrix ###
 
 matrix_db: synapse_db
 matrix_db_user: synapse_user
-matrix_db_pass: pass # TODO
-matrix_registration_shared_secret: 8dcfa39add2ff08eddd1fe7adf01c343 # TODO: openssl rand -hex 16
+matrix_db_pass: pass # TODO: random password
+matrix_registration_shared_secret: pass # TODO: random password
 
 matrix_fqdn: matrix.ioinformatics.org # TODO
