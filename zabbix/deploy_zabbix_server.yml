@@ -1,0 +1,33 @@
+---
+
+- hosts: zabbix_server
+  become: yes
+  roles:
+    - role: postgresql
+      vars:
+        postgresql_version: 12
+        dbs:
+          - name: "{{ zabbix_db }}"
+            public_schema_owner: "{{ zabbix_db_user }}"
+        db_users:
+          - name: "{{ zabbix_db_user }}"
+            password: "{{ zabbix_db_password }}"
+            allowed_databases:
+              - "{{ zabbix_db }}"
+            allowed_host_addresses: "{{ (groups['zabbix_server']) | unique | ipaddr('network/prefix') }}"
+            enable_large_object: no
+        db_privileges:
+          - database: "{{ zabbix_db }}"
+            roles: "{{ zabbix_db_user }}"
+            privs: ALL
+
+    - role: zabbix-server
+
+    - role: nginx
+      vars:
+        domains:
+          - name: zabbix
+            fqdn: "{{ zabbix_fqdn }}"
+            config_template: "{{ playbook_dir }}/templates/zabbix.nginx.j2"
+            auth_basic_user: "{{ zabbix_auth_basic_user | default('') }}"
+            auth_basic_pass: "{{ zabbix_auth_basic_pass | default('') }}"

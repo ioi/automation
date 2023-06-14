@@ -1,0 +1,38 @@
+- name: Download Zabbix Package
+  apt:
+    deb: https://repo.zabbix.com/zabbix/5.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_5.0-1+focal_all.deb
+
+- name: Add ppa Repository
+  apt_repository: repo=ppa:ondrej/php
+    
+- name: Update APT packages
+  apt:
+    upgrade: "yes"
+    update_cache: yes
+
+- name: Install Zabbix Agent
+  apt:
+    pkg:
+    - zabbix-agent
+
+- name: Add PSK
+  become: yes
+  template:
+    src: autoregistration.psk.j2
+    dest: /etc/zabbix/autoregistration.psk
+    owner: root
+    group: root
+    mode: 0644
+  notify: Restart Zabbix Agent
+  tags: config
+
+- name: Configure Zabbix Agent
+  become: yes
+  template:
+    src: zabbix_agentd.conf.j2
+    dest: /etc/zabbix/zabbix_agentd.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify: Restart Zabbix Agent
+  tags: config

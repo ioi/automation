@@ -1,0 +1,8 @@
+zabbix_db: zabbix
+zabbix_db_user: zabbix
+zabbix_db_password: passworddb
+
+auth_basic_user:
+auth_basic_pass:
+
+timezone: Asia/Jakarta

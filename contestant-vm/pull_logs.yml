@@ -1,0 +1,62 @@
+- name: Create destination directory
+  hosts: localhost
+  become: yes
+  tasks:
+    - name: Create ioistore
+      file:
+        path: /opt/contestant-vm/ioistore
+        owner: ansible
+        group: ansible
+        mode: '0775'
+        follow: yes
+        state: directory
+
+    - name: Create ioisyslog
+      file:
+        path: /opt/contestant-vm/ioisyslog
+        owner: ansible
+        group: ansible
+        mode: '0775'
+        follow: yes
+        state: directory
+
+    - name: Create firefoxlog
+      file:
+        path: /opt/contestant-vm/firefoxlog
+        owner: ansible
+        group: ansible
+        mode: '0775'
+        follow: yes
+        state: directory
+
+
+- hosts: all
+  strategy: free
+  gather_facts: no
+  become: yes
+  tasks:
+    - name: Pull IOI store
+      synchronize:
+        mode: pull
+        src: "/opt/ioi/store/"
+        dest: "/opt/contestant-vm/ioistore/{{ inventory_hostname }}/"
+        delete: yes
+        recursive: yes
+      ignore_unreachable: yes
+    - name: Pull syslog history
+      synchronize:
+        mode: pull
+        src: "/var/log/syslog"
+        dest: "/opt/contestant-vm/ioisyslog/{{ inventory_hostname }}/"
+        delete: yes
+        recursive: yes
+      ignore_unreachable: yes
+    - name: Pull Firefox history
+      synchronize:
+        mode: pull
+        src: "/home/ioi/.mozilla/firefox/dqb69w9m.default-release/places.sqlite"
+        dest: "/opt/contestant-vm/firefoxlog/{{ inventory_hostname }}/"
+        delete: yes
+        recursive: yes
+      ignore_unreachable: yes
+      ignore_errors: yes

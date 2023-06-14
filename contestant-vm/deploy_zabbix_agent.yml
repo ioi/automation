@@ -1,0 +1,24 @@
+- hosts: all
+  become: yes
+  become_method: sudo
+  gather_facts: no
+  strategy: free
+  tasks:
+    - name: Copy PSK
+      copy:
+        content: "{{ zabbix_psk }}\n"
+        dest: /etc/zabbix/psk-autoregistration.txt
+        mode: 0600
+        owner: zabbix
+        group: zabbix
+
+    - name: Copy Zabbix Agent Configuration
+      template:
+        src: files/zabbix_agentd.j2
+        dest: /etc/zabbix/zabbix_agentd_ioi.conf
+
+    - name: Enable Zabbix Agent
+      service:
+        name: zabbix-agent
+        enabled: yes
+        state: restarted

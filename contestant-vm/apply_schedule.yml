@@ -1,0 +1,10 @@
+# will fetch the schedule from $POP_SERVER/config/schedule2.txt
+
+- hosts: all
+  become: yes
+  become_method: sudo
+  gather_facts: no
+  strategy: free
+  tasks:
+    - name: Apply schedule
+      shell: "sudo /opt/ioi/sbin/checkschedule.sh"
